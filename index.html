@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a0620">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Para Lu">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Para Lu</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;cursor:pointer;-webkit-text-size-adjust:100%;color:#eaf6ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+body{background:radial-gradient(ellipse at 50% 40%,#2a1752 0,#120a2e 55%,#07041a 100%)}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+.v{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;opacity:0;pointer-events:none;transition:opacity 1s}
+.v.on{opacity:1;pointer-events:auto}
+#v0{padding-top:130px}
+.ttl{font-size:clamp(22px,6vw,30px);letter-spacing:.35em;font-weight:600;text-indent:.35em}
+.sub{margin-top:14px;font-size:12px;letter-spacing:.3em;opacity:.55;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.2}}
+#hint{position:fixed;bottom:9vh;left:0;right:0;text-align:center;font-size:12px;letter-spacing:.3em;opacity:0;transition:opacity 1.5s;pointer-events:none}
+#hint.on{opacity:.55;animation:pulse 2.4s ease-in-out infinite}
+#msg{max-width:480px;text-align:left;font-size:clamp(16px,4.6vw,19px);line-height:1.6;white-space:pre-wrap;min-height:60vh;display:flex;align-items:center}
+#msg{text-shadow:0 0 8px #07041a,0 0 18px #07041a}
+.btn{margin-top:26px;padding:13px 30px;border-radius:999px;border:1px solid #7be9ff88;background:#0e1b3a99;color:#eaf6ff;font-size:16px;letter-spacing:.08em;cursor:pointer;opacity:0;transition:opacity 1s;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.btn.on{opacity:1}
+.small{max-width:420px;font-size:15px;opacity:.7;line-height:1.5}
+.q{margin:22px 0 34px;font-size:clamp(34px,10vw,56px);line-height:1.1;font-weight:700;text-shadow:0 0 24px #7be9ff88}
+.row{display:flex;gap:22px;align-items:center;justify-content:center;min-height:80px}
+#si,#no{font-size:20px;font-weight:600;padding:14px 34px;border-radius:14px;border:0;cursor:pointer;transition:transform .25s}
+#si{background:linear-gradient(135deg,#27d9f5,#ff4d6d);color:#fff;transform-origin:center;box-shadow:0 0 22px #ff4d6d77}
+#no{background:#2b2550;color:#cfd6ff;transform-origin:top left;transition:left .25s,top .25s,transform .25s}
+#cap{margin-top:30px;min-height:56px;max-width:340px;font-size:16px;opacity:.85;font-style:italic}
+#cap.loud{font-size:28px;font-weight:800;font-style:normal;color:#ff5d73;opacity:1;animation:shake .1s infinite}
+@keyframes shake{25%{transform:translate(2px,-2px)}75%{transform:translate(-2px,2px)}}
+#si.auto{outline:3px solid #fff;outline-offset:7px;animation:glow .5s ease-in-out infinite}
+@keyframes glow{50%{filter:brightness(1.5);box-shadow:0 0 50px #27e6ffcc}}
+.h{position:fixed;top:-40px;font-size:24px;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(115vh) rotate(40deg)}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="v on" id="v0"><div class="ttl">PARA LU</div><div class="sub">TOCA PARA ABRIR</div></div>
+<div id="hint">TOCA PARA SEGUIR</div>
+
+<div class="v" id="v3"><div id="msg"></div><button class="btn" id="next">Lo de hoy →</button></div>
+
+<div class="v" id="v4">
+  <p class="small">Lo de hoy no te lo voy a contar: prefiero verte en persona.</p>
+  <h1 class="q" id="q">¿Puedes quedar luego?</h1>
+  <div class="row"><button id="si">Sí</button><button id="no">No</button></div>
+  <p id="cap"></p>
+</div>
+
+<div class="v" id="v6"><h1 class="q" id="rt" style="margin:0"></h1></div>
+
+<div class="v" id="v5"><h1 class="q" style="margin:0 0 14px">¡Lo sabía!!</h1><p class="small">¡Luego te veo, cielo!</p></div>
+
+<script>
+const BLIP_HZ=420; // tono base del sonido de escritura (más alto = más agudo)
+const SONG=""; // ponytail: pon aquí la ruta del mp3 (o un data:audio/...) y suena al primer toque
+const TEXT=`Hola, Lu.
+
+Supongo que ya se me ha escapado la sorpresa del calendario de adviento, pero te lo voy a explicar todo igualmente:
+
+Vas a tener un regalo por día, desde el 1 al 24 de diciembre, y cada día te mandaré un ejecutable a modo de presentación, explicándote las instrucciones necesarias. Habrá días que no pueda quedar contigo o mandarte los regalos, por lo que igual te dejo algunos en casa con la condición de que no los abras hasta el día que toca. Me fío de ti eh!`;
+const WORDS=["te quiero","I love you","je t'aime","ti amo","ich liebe dich","te amo","愛してる","사랑해","我爱你","я тебя люблю","σ' αγαπώ","ik hou van je","jag älskar dig","seni seviyorum","kocham cię","volo te","Lu","Lu","Lu"];
+const $=id=>document.getElementById(id);
+const c=$("c"),x=c.getContext("2d");
+const PERIOD=16; // segundos que tarda cian→rojo→cian
+let W,H,R,CX,CY,words=[],stage=0,openT=0,bgA=1,bgTarget=1,audio,flakes=[];
+
+// corazón clásico (paramétrico): punta abajo y hendidura arriba; centrado en (0,0), ~±1.1 de ancho
+// alma de Undertale: corazón de píxeles (9×8). Cian = "paciencia", y se funde a rojo = "determinación"
+const BM=[".XXX.XXX.","XXXXXXXXX","XXXXXXXXX","XXXXXXXXX",".XXXXXXX.","..XXXXX..","...XXX...","....X...."];
+function inH(u,v){const c=Math.floor((u+1.15)/2.3*9),r=Math.floor((1.02-v)/2.04*8);return r>=0&&r<8&&c>=0&&c<9&&BM[r][c]==="X"}
+function build(){
+  const D=Math.min(devicePixelRatio||1,2);
+  W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0);
+  R=Math.min(W*.4,H*.4);CX=W/2;CY=H/2;
+  const fs=Math.max(8,R/20),sy=fs*1.45;words=[];
+  x.font=`${fs}px system-ui,sans-serif`;
+  for(let v=1.06;v>-1.06;v-=sy/R){
+    const runs=[];let a=null;
+    for(let u=-1.2;u<=1.2;u+=.01){const i=inH(u,v);if(i&&a===null)a=u;if(!i&&a!==null){runs.push([a,u]);a=null}}
+    for(const [u0,u1] of runs){
+      const rw=(u1-u0)*R-fs;if(rw<fs*3.5)continue;
+      const row=[];let sum=0;
+      for(;;){const t=WORDS[Math.random()*WORDS.length|0],w=x.measureText(t).width;
+        if(sum+w+fs*(row.length)>rw)break;row.push({t,w});sum+=w}
+      if(!row.length)continue;
+      const gap=row.length>1?(rw-sum)/(row.length-1):0;
+      let cx=CX+u0*R+fs/2+(row.length>1?0:rw/2-row[0].w/2);
+      for(const r of row){
+        const px=cx+r.w/2,py=CY-v*R,d=Math.hypot((px-CX)/R,(py-CY)/R)/1.2;
+        words.push({x:px,y:py,t:r.t,d,p:d*.35+Math.random()*.05,fs});cx+=r.w+gap;
+      }
+    }
+  }
+  flakes=Array.from({length:55},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.4,v:Math.random()*.4+.2}));
+}
+function hue(now,p){const t=(1-Math.cos(2*Math.PI*(now/1000/PERIOD-p)))/2;return 185+170*t}
+const clamp=v=>Math.max(0,Math.min(1,v)),ease=t=>1-Math.pow(1-t,3);
+
+function soul(s){BM.forEach((row,j)=>{for(let i=0;i<9;i++)if(row[i]==="X")x.fillRect(Math.round(CX+(i-4.5)*s),Math.round(CY-60+(j-4)*s),Math.ceil(s),Math.ceil(s))})}
+
+function frame(now){
+  x.clearRect(0,0,W,H);
+  bgA+=(bgTarget-bgA)*.04;
+  x.fillStyle="#fff";
+  for(const f of flakes){f.y+=f.v;f.x+=Math.sin(now/2000+f.r)*.15;if(f.y>H)f.y=-4;x.globalAlpha=.35*bgA;x.beginPath();x.arc(f.x,f.y,f.r,0,6.3);x.fill()}
+  const hh=hue(now,0);
+  if(stage<2){ // corazón cian cerrado, latiendo; al tocar se abre
+    const o=stage?clamp((now-openT)/900):0,s=6*(1+.06*Math.sin(now/350))*(1+o*1.5);
+    x.globalAlpha=1-o;x.shadowColor="#27e6ff";x.shadowBlur=26;x.fillStyle="#27e6ff";soul(s);x.shadowBlur=0;
+  }
+  if(stage>=1){
+    const g=x.createRadialGradient(CX,CY,0,CX,CY,R*1.5);
+    g.addColorStop(0,`hsla(${hh},100%,55%,${.18*bgA})`);g.addColorStop(1,"transparent");
+    x.globalAlpha=1;x.fillStyle=g;x.fillRect(0,0,W,H);
+    x.textAlign="center";x.textBaseline="middle";
+    const beat=1+.018*Math.sin(now/300);
+    for(const w of words){
+      const e=ease(clamp((now-openT-300-w.d*2600)/1500));if(e<=0)continue;
+      const px=CX+(w.x-CX)*e*beat,py=CY+(w.y-CY)*e*beat;
+      x.globalAlpha=e*(.55+.45*bgA)*bgA;x.font=`${w.fs*e}px system-ui,sans-serif`;
+      x.fillStyle=`hsl(${hue(now,w.p)} 100% 64%)`;x.fillText(w.t,px,py);
+    }
+  }
+  x.globalAlpha=1;requestAnimationFrame(frame);
+}
+
+function show(id){document.querySelectorAll(".v").forEach(v=>v.classList.toggle("on",v.id===id))}
+// sonido de escritura tipo Undertale: blip cuadrado corto con tono ligeramente aleatorio
+let ac;
+function blip(hz=BLIP_HZ){
+  if(!ac)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
+  o.type="square";o.frequency.value=hz+Math.random()*40-20;
+  g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.001,t+.06);
+  o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.07);
+}
+function initAudio(){ // iOS exige crearlo dentro de un toque
+  try{navigator.audioSession.type="playback"}catch(e){}
+  if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(A)ac=new A()}
+  if(ac&&ac.state!=="running")ac.resume();
+}
+function open(){
+  initAudio();
+  stage=1;openT=performance.now();show("");
+  if(SONG){audio=new Audio(SONG);audio.loop=true;audio.volume=.6;audio.play().catch(()=>{})}
+  setTimeout(()=>{stage=2;$("hint").classList.add("on")},5200);
+}
+let typing=null,full="",pos=0;
+function message(){
+  stage=3;bgTarget=.1;$("hint").classList.remove("on");show("v3");
+  const el=$("msg");const tick=()=>{
+    el.textContent=TEXT.slice(0,pos);
+    if(pos>=TEXT.length){typing=null;$("next").classList.add("on");return}
+    const ch=TEXT[pos++];if(/\S/.test(ch))blip();
+    typing=setTimeout(tick,/[.:!?]/.test(ch)?280:ch===","?130:34);
+  };tick();
+}
+function skip(){if(typing){clearTimeout(typing);pos=TEXT.length;typing=null;$("msg").textContent=TEXT;$("next").classList.add("on")}}
+addEventListener("click",e=>{
+  if(stage===0)open();else if(stage===2)message();else if(stage===3&&e.target.id!=="next")skip();
+});
+$("next").onclick=()=>{stage=4;show("v4");$("cap").textContent=""};
+
+// ---- el botón NO: imposible de pulsar ----
+const no=$("no"),si=$("si"),cap=$("cap");
+// Tanda 1; tras "¿Me perdonas?" viene "vamos a intentarlo otra vez" y la tanda 2; al acabar la 2 el Sí se elige solo.
+const S0=["Buen intento","Qué va, qué va","Pero si lo estás deseando","Uy, se ha movido","¿Soy yo o se está haciendo más pequeñito?","Coge el Sí mejor, anda","illo que pesada","Me abuuuurro","Yo lo iba dejando ya","Error 404","Me he quedado sin diálogos, para","Para","PARA","LUCÍA COÑO","DALE AL SI","Perdón no te quería gritar","¿Me perdonas?"];
+const S1=["Venga, ponlo fácil","Esto va a ser infinito","Mira, no voy a decir nada más.","Se acabó.","Se ha acabado, te he dicho.","Nada, que no hay manera","Mira, hago lo que me dé la gana"];
+const SCRIPTS=[S0,S1];
+// Si pulsa el No muchas veces seguidas sin dar tiempo a leer, se pone pesado; si aun así sigue, se corta todo y "otra vez".
+const IMPATIENT=["Oye, no me estás ni leyendo","Lucía, hazme caso","Oye!","LUCÍA","PARA"];
+const RAPID_MS=1100,RAPID_START=3; // "rápido" = menos de 1,1 s entre pulsaciones; a la 3ª seguida empieza a quejarse
+let phase=0,n=0,streak=0,lastTap=0,busy=false,mx=-999,my=-999,capT,endT;
+
+function type(el,t,hz,speed){
+  clearTimeout(capT);el.className=el===cap&&t===t.toUpperCase()&&/[A-ZÁÉÍÓÚÑ]{3}/.test(t)?"loud":"";let i=0;
+  (function k(){el.textContent=t.slice(0,++i);if(/\S/.test(t[i-1]))blip(hz);if(i<t.length)capT=setTimeout(k,speed)})();
+}
+const say=t=>type(cap,t,BLIP_HZ*.75,28);
+function place(){ // mueve el No a otro sitio; más pequeño según avanza la tanda
+  if(no.style.position!=="fixed"){const r=no.getBoundingClientRect();no.style.position="fixed";no.style.left=r.left+"px";no.style.top=r.top+"px";void no.offsetWidth}
+  const s=Math.max(.2,1-n*.07),bw=no.offsetWidth*s,bh=no.offsetHeight*s,sr=si.getBoundingClientRect();
+  let nx,ny;
+  for(let i=0;i<40;i++){
+    nx=8+Math.random()*(innerWidth-bw-16);ny=8+Math.random()*(innerHeight-bh-16);
+    const farSi=nx>sr.right+30||nx+bw<sr.left-30||ny>sr.bottom+30||ny+bh<sr.top-30;
+    if(farSi&&Math.hypot(nx+bw/2-mx,ny+bh/2-my)>140)break;
+  }
+  no.style.left=nx+"px";no.style.top=ny+"px";no.style.transform=`scale(${s})`;
+  si.style.transform=`scale(${1+Math.min(n*.07,.8)})`;
+}
+function retry(next){ // para todo, "otra vez" en grande, y el No vuelve grande
+  clearTimeout(endT);clearTimeout(capT);busy=true;streak=0;
+  if(next){phase++;n=0}
+  show("v6");type($("rt"),"Bueno, vamos a intentarlo otra vez",BLIP_HZ,45);
+  setTimeout(()=>{no.style.position="";no.style.left=no.style.top=no.style.transform="";si.style.transform="";cap.textContent="";cap.className=""},1200);
+  setTimeout(()=>{
+    no.style.transformOrigin="center";no.style.transform="scale(.1)";show("v4");
+    setTimeout(()=>{no.style.transition="transform .9s cubic-bezier(.3,1.6,.5,1)";no.style.transform="";
+      setTimeout(()=>{no.style.transition="";no.style.transformOrigin="";busy=false;lastTap=0},950)},500);
+  },3300);
+}
+function autoYes(){ // el Sí se pulsa solo
+  clearTimeout(endT);clearTimeout(capT);busy=true;no.style.opacity=0;no.style.pointerEvents="none";si.classList.add("auto");
+  setTimeout(()=>si.click(),1400);
+}
+function tap(){ // una pulsación de verdad sobre el No
+  if(busy||stage!==4)return;
+  const t=performance.now();if(t-lastTap<120)return; // los eventos de un mismo toque cuentan una vez
+  streak=t-lastTap<RAPID_MS?streak+1:0;lastTap=t;
+  if(streak>=RAPID_START){
+    const k=streak-RAPID_START;
+    if(k<IMPATIENT.length){place();say(IMPATIENT[k]);return}
+    return retry(false);
+  }
+  const S=SCRIPTS[phase];
+  if(n>=S.length)return phase?autoYes():retry(true);
+  n++;place();say(S[n-1]);
+  if(n===S.length)endT=setTimeout(phase?autoYes:()=>retry(true),phase?2800:3500);
+}
+["pointerenter","pointerdown","mousedown","touchstart","click","focus"].forEach(ev=>no.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();tap();no.blur()},{passive:false}));
+addEventListener("pointerdown",e=>{mx=e.clientX;my=e.clientY});
+si.onclick=()=>{
+  stage=5;bgTarget=.55;show("v5");no.style.display="none";
+  for(let i=0;i<40;i++){const h=document.createElement("span");h.className="h";h.textContent=Math.random()<.5?"💙":"❤️";
+    h.style.left=Math.random()*100+"vw";h.style.animationDuration=3+Math.random()*3+"s";h.style.animationDelay=Math.random()*2.5+"s";document.body.appendChild(h)}
+};
+
+addEventListener("resize",build);build();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
