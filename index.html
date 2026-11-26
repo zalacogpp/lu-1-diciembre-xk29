@@ -152,7 +152,7 @@ function initAudio(){ // iOS exige crearlo dentro de un toque
   if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(A)ac=new A()}
   if(ac&&ac.state!=="running")ac.resume();
 }
-function open(){
+function openHeart(){
   initAudio();
   stage=1;openT=performance.now();show("");
   if(SONG){audio=new Audio(SONG);audio.loop=true;audio.volume=.6;audio.play().catch(()=>{})}
@@ -169,9 +169,13 @@ function message(){
   };tick();
 }
 function skip(){if(typing){clearTimeout(typing);pos=TEXT.length;typing=null;$("msg").textContent=TEXT;$("next").classList.add("on")}}
-addEventListener("click",e=>{
-  if(stage===0)open();else if(stage===2)message();else if(stage===3&&e.target.id!=="next")skip();
-});
+// iOS no genera "click" al tocar un div sin más: se atiende pointerup (toque/ratón) y click (teclado); se cuenta una vez
+let lastGo=0;
+function go(e){
+  const t=performance.now();if(t-lastGo<350)return;lastGo=t;
+  if(stage===0)openHeart();else if(stage===2)message();else if(stage===3&&!(e.target.closest&&e.target.closest("button")))skip();
+}
+addEventListener("pointerup",go);addEventListener("click",go);
 $("next").onclick=()=>{stage=4;show("v4");$("cap").textContent=""};
 
 // ---- el botón NO: imposible de pulsar ----
